@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light}body{margin:0}</style></head><body>
+<title>CareTrack</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: navy sidebar + working area; clinical white surfaces, teal for action, red only for fever and danger */
+:root{
+  --bg:#ffffff; --panel:#ffffff; --tint:#f3f6fa; --ink:#0d2038; --ink-2:#4f6178; --line:#dbe3ec;
+  --navy:#0f2a4a; --on-navy:#e8f0f8; --on-navy-2:#a3b7cc;
+  --btn:#076f6b; --btn-hover:#05605c; --on-btn:#ffffff; --teal:#0b8a85; --teal-text:#076f6b; --teal-soft:#dff3f1;
+  --red:#b42318; --red-soft:#fdeceb; --amber:#8a5300; --amber-soft:#fff1d6; --green:#1b7a4b; --green-soft:#e1f4e8;
+  --blue:#24527f; --blue-soft:#e4eefa; --dark-soft:#e3e7ee; --dark:#2b3a4f;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#08121e; --panel:#0e1d2f; --tint:#132840; --ink:#e6eef7; --ink-2:#9db2c8; --line:#233a56;
+  --navy:#0d2340; --on-navy:#e8f0f8; --on-navy-2:#9db2c8;
+  --btn:#0e8a84; --btn-hover:#12a09a; --on-btn:#ffffff; --teal:#2ec4bc; --teal-text:#4fd8d0; --teal-soft:#10353a;
+  --red:#ff9a90; --red-soft:#3b1c20; --amber:#ffc266; --amber-soft:#38290e; --green:#72dda0; --green-soft:#12331f;
+  --blue:#8fc0f5; --blue-soft:#14304d; --dark-soft:#233249; --dark:#c9d6e6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#08121e; --panel:#0e1d2f; --tint:#132840; --ink:#e6eef7; --ink-2:#9db2c8; --line:#233a56;
+  --navy:#0d2340; --on-navy:#e8f0f8; --on-navy-2:#9db2c8;
+  --btn:#0e8a84; --btn-hover:#12a09a; --on-btn:#ffffff; --teal:#2ec4bc; --teal-text:#4fd8d0; --teal-soft:#10353a;
+  --red:#ff9a90; --red-soft:#3b1c20; --amber:#ffc266; --amber-soft:#38290e; --green:#72dda0; --green-soft:#12331f;
+  --blue:#8fc0f5; --blue-soft:#14304d; --dark-soft:#233249; --dark:#c9d6e6; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;
+  padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{margin:0;font-weight:600;line-height:1.25;text-wrap:balance}
+h1{font-size:22px} h2{font-size:16px} h3{font-size:14px}
+p{margin:0}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-2)}
+.sub{color:var(--ink-2);font-size:12px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+
+.shell{display:grid;grid-template-columns:232px minmax(0,1fr);gap:20px;max-width:1360px;margin:0 auto;align-items:start}
+.side{background:var(--navy);color:var(--on-navy);border-radius:12px;padding:16px 12px;position:sticky;top:16px;
+  display:flex;flex-direction:column;gap:18px;min-height:min(660px,calc(100vh - 32px))}
+.brand{display:flex;align-items:center;gap:10px;padding:0 6px}
+.brand-mark{width:32px;height:32px;border-radius:8px;background:var(--teal);display:grid;place-items:center;flex:none}
+.brand strong{display:block;font-size:16px;color:#fff;line-height:1.1}
+.brand small{color:var(--on-navy-2);font-size:11px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--on-navy-2);text-decoration:none;font-weight:500}
+.nav a:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav a[aria-current="page"]{background:rgba(255,255,255,.12);color:#fff}
+.nav svg,.ic{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.userbox{margin-top:auto;border-top:1px solid rgba(255,255,255,.14);padding:14px 6px 0;display:flex;flex-direction:column;gap:10px}
+.userbox strong{display:block;color:#fff}
+.userbox small{color:var(--on-navy-2)}
+.side .btn-ghost{color:var(--on-navy);background:transparent;border-color:rgba(255,255,255,.28);justify-content:center}
+.side .btn-ghost:hover{background:rgba(255,255,255,.1)}
+
+.main{min-width:0;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:flex-end;justify-content:space-between}
+.top p{color:var(--ink-2)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--tint);border:1px solid var(--line);font-size:12px;color:var(--ink-2)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.card-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+.grid{display:grid;gap:12px}
+.g-kpi{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.g-2{grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr))}
+.kpi{background:var(--tint);border-radius:10px;padding:14px;min-width:0}
+.kpi-l{font-size:12px;color:var(--ink-2);font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.kpi-v{font-size:28px;font-weight:600;line-height:1.2;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi-s{font-size:12px;color:var(--ink-2);margin-top:2px}
+.kpi.red .kpi-v{color:var(--red)} .kpi.amber .kpi-v{color:var(--amber)} .kpi.teal .kpi-v{color:var(--teal-text)}
+.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:8px}
+.bar>i{display:block;height:100%;background:var(--teal)}
+.bar.red>i{background:var(--red)}
+
+.banner{display:flex;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid;align-items:flex-start}
+.banner strong{display:block}
+.banner.red{background:var(--red-soft);color:var(--red);border-color:var(--red)}
+.banner.amber{background:var(--amber-soft);color:var(--amber);border-color:var(--amber)}
+.banner.blue{background:var(--blue-soft);color:var(--blue);border-color:var(--blue)}
+.banner.green{background:var(--green-soft);color:var(--green);border-color:var(--green)}
+.banner span{color:var(--ink)}
+
+.badge{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-red{background:var(--red-soft);color:var(--red)} .b-amber{background:var(--amber-soft);color:var(--amber)}
+.b-green{background:var(--green-soft);color:var(--green)} .b-teal{background:var(--teal-soft);color:var(--teal-text)}
+.b-blue{background:var(--blue-soft);color:var(--blue)} .b-grey{background:var(--dark-soft);color:var(--ink-2)}
+.b-dark{background:var(--dark);color:var(--bg)}
+.t-fever{color:var(--red);font-weight:600}
+
+[hidden]{display:none!important}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 14px;border-radius:8px;border:1px solid transparent;cursor:pointer;font-weight:600;background:none;white-space:nowrap;text-decoration:none;color:var(--ink)}
+.btn-primary{background:var(--btn);color:var(--on-btn)} .btn-primary:hover{background:var(--btn-hover)}
+.btn-ghost{border-color:var(--line);background:var(--panel)} .btn-ghost:hover{background:var(--tint)}
+.btn-danger{background:var(--red);color:var(--bg)}
+.btn-sm{padding:5px 10px;font-size:13px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.link{background:none;border:0;padding:0;cursor:pointer;text-align:left;font-weight:600;color:var(--ink)}
+.link:hover{color:var(--teal-text);text-decoration:underline}
+
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.inp{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);min-width:0;width:100%}
+.inp:focus{border-color:var(--teal)}
+.inp-sm{width:110px;padding:5px 8px}
+.search{flex:1 1 220px;max-width:340px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-weight:500;color:var(--ink-2)}
+.tab[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.tab b{font-family:var(--mono);margin-left:4px}
+
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{width:100%;border-collapse:collapse;min-width:640px}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-2);text-align:left;font-weight:600;background:var(--tint);padding:9px 12px;white-space:nowrap}
+td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:middle}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--tint)}
+.empty{padding:28px 16px;text-align:center;color:var(--ink-2)}
+.pips{display:inline-flex;gap:4px;align-items:center;margin-right:6px;vertical-align:middle}
+.pips i{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--ink-2)}
+.pips i.on{background:var(--teal);border-color:var(--teal)}
+.entry{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.im{font-size:12px;color:var(--red);margin-top:4px;min-height:0}
+.corr{background:var(--amber-soft);border-radius:8px;padding:10px;margin-top:8px;display:flex;flex-direction:column;gap:8px;max-width:420px;color:var(--ink)}
+.corr b{color:var(--amber)}
+
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-weight:600;font-size:13px}
+.field small{color:var(--ink-2)}
+.frm{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px}
+.frm .wide{grid-column:1/-1}
+textarea.inp{min-height:84px;resize:vertical}
+.err{color:var(--red);font-size:13px;min-height:18px}
+.dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 16px;margin:0}
+.dl dt{font-size:12px;color:var(--ink-2)} .dl dd{margin:0;font-weight:500}
+.rowl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+.who{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer;text-align:left}
+.who:hover{border-color:var(--teal);background:var(--tint)}
+.who-av{width:36px;height:36px;border-radius:50%;background:var(--teal-soft);color:var(--teal-text);display:grid;place-items:center;font-weight:600;flex:none}
+.who-t{display:flex;flex-direction:column;min-width:0;flex:1}
+.who-t small{color:var(--ink-2)}
+.who-go{color:var(--teal-text);font-weight:600}
+.login{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:0;max-width:960px;margin:6vh auto 0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+.login-l{background:var(--navy);color:var(--on-navy);padding:32px;display:flex;flex-direction:column;gap:22px}
+.login-l h1{color:#fff;font-size:26px}
+.login-l ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px;color:var(--on-navy-2)}
+.login-l li strong{color:#fff;font-family:var(--mono);font-weight:500;margin-right:6px}
+.login-r{padding:28px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.grp{display:flex;flex-direction:column;gap:8px}
+.grp h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2)}
+
+.ov{position:fixed;inset:0;background:rgba(6,16,30,.55);display:flex;align-items:flex-start;justify-content:center;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));overflow-y:auto;z-index:50}
+.dlg{background:var(--panel);border:1px solid var(--line);border-radius:14px;width:100%;max-width:720px;padding:20px;display:flex;flex-direction:column;gap:16px;margin:auto}
+.dlg-h{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.x{background:none;border:0;cursor:pointer;color:var(--ink-2);padding:4px}
+.toast{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--navy);color:#fff;padding:10px 14px;border-radius:10px;max-width:min(380px,calc(100vw - 32px));z-index:80;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.toast.bad{background:var(--red);color:var(--bg)}
+.g-txt{fill:var(--ink-2);font:10px var(--mono)} .g-grid{stroke:var(--line);stroke-width:1} .g-line{stroke:var(--teal);fill:none;stroke-width:2}
+.g-th{stroke:var(--red);stroke-width:1.2;stroke-dasharray:4 3} .g-lab{fill:var(--red);font:10px var(--mono)}
+.svgw{overflow-x:auto}.svgw svg{display:block;width:100%;max-width:720px;height:auto;min-width:420px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--ink-2);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+.defs{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;color:var(--ink-2)}
+.defs b{color:var(--ink)}
+.stack{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--line)}
+.stack i{display:block;height:100%}
+.meter{position:relative;height:14px;border-radius:99px;background:var(--line);margin:18px 0 6px}
+.meter>i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--teal)}
+.meter>u{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--ink)}
+.meter>em{position:absolute;top:-22px;font-style:normal;font-size:11px;color:var(--ink-2);white-space:nowrap;transform:translateX(-100%);padding-right:6px}
+.mobile-only{display:none}
+@media (max-width:880px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .side{position:static;min-height:0;padding:12px;gap:12px}
+  .nav{flex-direction:row;overflow-x:auto;padding-bottom:4px}
+  .nav a{white-space:nowrap}
+  .userbox{flex-direction:row;align-items:center;justify-content:space-between;margin-top:0;padding-top:10px;flex-wrap:wrap}
+  .login{grid-template-columns:minmax(0,1fr);margin-top:0}
+  .login-l,.login-r{padding:20px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div id="root"></div>
+<div id="modal"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+var CAP=74, KEY='caretrack.v1', SKEY='caretrack.session';
+var USERS=[
+ {id:'N-101',name:'Priya Sharma',role:'nurse',ward:'Ward A, rooms 1 to 37',blurb:'Records daily temperatures'},
+ {id:'N-102',name:'Rohan Mehta',role:'nurse',ward:'Ward B, rooms 38 to 74',blurb:'Records daily temperatures'},
+ {id:'D-201',name:'Dr. Anjali Rao',role:'doctor',blurb:'Reviews readings and records visits'},
+ {id:'D-202',name:'Dr. Vikram Desai',role:'doctor',blurb:'Reviews readings and records visits'},
+ {id:'A-301',name:'Meera Kulkarni',role:'admin',blurb:'Registers patients, discharges, reports'}];
+var ROLE_LABEL={admin:'Admin',nurse:'Nurse',doctor:'Doctor'};
+var NAV=[
+ {id:'dashboard',label:'Dashboard',icon:'grid',roles:['admin','nurse','doctor']},
+ {id:'patients',label:'Patients',icon:'users',roles:['admin','nurse','doctor']},
+ {id:'register',label:'Register patient',icon:'plus',roles:['admin']},
+ {id:'temperature',label:'Temperature',icon:'therm',roles:['nurse']},
+ {id:'visits',label:'Doctor visits',icon:'pulse',roles:['doctor']},
+ {id:'discharge',label:'Discharge',icon:'door',roles:['admin','doctor']},
+ {id:'reports',label:'Reports',icon:'bars',roles:['admin','doctor']},
+ {id:'config',label:'Settings',icon:'sliders',roles:['admin']}];
+var ICONS={grid:'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
+ users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+ plus:'M12 5v14M5 12h14',therm:'M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z',pulse:'M22 12h-4l-3 9L9 3l-3 9H2',
+ door:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',bars:'M18 20V10M12 20V4M6 20v-6',
+ sliders:'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
+ warn:'M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
+ x:'M18 6L6 18M6 6l12 12'};
+var ic=function(n){return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="'+ICONS[n]+'"/></svg>';};
+
+var S=null, session=null, view='dashboard', M=null, lastReg=null;
+var F={patients:{q:'',f:'active'},temp:{q:'',f:'pending',corr:null},visits:{q:'',f:'ready'},discharge:{tab:'eligible'}};
+
+/* ---------- helpers ---------- */
+var pad=function(n){return String(n).padStart(2,'0');};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+var f1=function(n){return (Math.round(n*10)/10).toFixed(1);};
+function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function addDays(s,n){var a=s.split('-').map(Number);return ymd(new Date(a[0],a[1]-1,a[2]+n));}
+function realToday(){return ymd(new Date());}
+function today(){return S&&S.today?S.today:realToday();}
+function nowTime(){var d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes());}
+function fmtDate(s){var a=s.split('-').map(Number);return new Date(a[0],a[1]-1,a[2]).toLocaleDateString('en-IN',{day:'numeric',month:'short'});}
+function fmtLong(s){var a=s.split('-').map(Number);return new Date(a[0],a[1]-1,a[2]).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});}
+function nameOf(id){var u=USERS.find(function(x){return x.id===id;});return u?u.name:id;}
+function initials(n){return n.replace('Dr. ','').split(' ').map(function(w){return w[0];}).join('').slice(0,2);}
+function wardOf(room){return room<=37?'Ward A':'Ward B';}
+function nurseForRoom(room){return room<=37?'N-101':'N-102';}
+
+/* ---------- persistence ---------- */
+function load(){try{var r=localStorage.getItem(KEY);if(r){var o=JSON.parse(r);if(o&&o.patients&&o.settings)return o;}}catch(e){}return null;}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function saveSession(){try{if(session)localStorage.setItem(SKEY,session.id);else localStorage.removeItem(SKEY);}catch(e){}}
+
+/* ---------- demo data ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function seed(){
+  var rnd=mulberry32(7421),R=function(a,b){return a+Math.floor(rnd()*(b-a+1));},pick=function(a){return a[Math.floor(rnd()*a.length)];};
+  var r1=function(x){return Math.round(x*10)/10;},tm=function(a,b){return pad(R(a,b))+':'+pad(R(0,59));};
+  var first=['Aarav','Vihaan','Aditya','Arjun','Rohit','Karan','Sahil','Nikhil','Rahul','Amit','Sanjay','Pranav','Omkar','Yash','Tejas','Priya','Ananya','Sneha','Pooja','Neha','Kavya','Isha','Riya','Meera','Shruti','Aditi','Sakshi','Divya','Anjali','Swati'];
+  var last=['Patil','Deshmukh','Jadhav','Kulkarni','Shinde','More','Pawar','Gaikwad','Joshi','Kale','Bhosale','Sawant','Naik','Chavan','Mehta','Shah','Iyer','Nair','Reddy','Singh','Gupta','Verma','Desai','Rane','Kamble'];
+  var docs=['D-201','D-202'],t=realToday();
+  var rooms=[];for(var i=1;i<=CAP;i++)rooms.push(i);
+  for(i=rooms.length-1;i>0;i--){var j=Math.floor(rnd()*(i+1));var x=rooms[i];rooms[i]=rooms[j];rooms[j]=x;}
+  var specs=[];
+  for(i=0;i<73;i++)specs.push({kind:'active',room:rooms[i],ago:R(1,11)});
+  for(i=0;i<46;i++){var dead=i>=40,L=dead?R(3,9):R(5,10),back=R(0,16);specs.push({kind:dead?'deceased':'discharged',room:R(1,CAP),L:L,back:back,ago:L+back});}
+  specs.sort(function(a,b){return b.ago-a.ago;});
+  var seq=0;
+  var patients=specs.map(function(sp){
+    var id='CT-'+String(++seq).padStart(4,'0'),admitted=addDays(t,-sp.ago);
+    var p={id:id,name:pick(first)+' '+pick(last),age:R(19,82),sex:rnd()<.5?'F':'M',contact:'',room:sp.room,nurse:nurseForRoom(sp.room),
+      admitted:admitted,status:sp.kind,outDate:null,outBy:null,temps:[],visits:[]};
+    var nurse=p.nurse,d,date;
+    if(sp.kind==='active'){
+      var D=sp.ago,r=rnd(),n=r<.5?0:r<.67?1:r<.8?2:r<.88?3:r<.94?4:R(5,6);n=Math.min(n,D);var Fv=D+1-n;
+      for(d=0;d<=D;d++){date=addDays(admitted,d);var hasT=true;
+        if(d===D&&rnd()>.65)hasT=false;
+        if(hasT)p.temps.push({date:date,time:tm(6,9),value:d<Fv?r1(38.1+rnd()*1.7):r1(36.4+rnd()*1.1),by:nurse,corrections:[]});
+        if(d<D){if(rnd()<.93)p.visits.push({date:date,time:tm(10,15),by:pick(docs),notes:'',exception:''});}
+        else if(hasT?rnd()<.5:rnd()<.04)p.visits.push({date:date,time:tm(10,15),by:pick(docs),notes:'',exception:hasT?'':'Urgent review, nurse round not yet complete'});
+      }
+    }else{
+      p.outDate=addDays(t,-sp.back);p.outBy=sp.kind==='discharged'?'A-301':'D-201';
+      for(d=0;d<sp.L;d++){date=addDays(admitted,d);var v;
+        if(sp.kind==='discharged')v=d<sp.L-3?r1(38.1+rnd()*1.5):r1(36.4+rnd()*1.1);else v=r1(38.6+rnd()*1.9);
+        p.temps.push({date:date,time:tm(6,9),value:v,by:nurse,corrections:[]});
+        if(rnd()<.95)p.visits.push({date:date,time:tm(10,15),by:pick(docs),notes:'',exception:''});}
+    }
+    return p;
+  });
+  return {settings:{fever:38.0,mortAlert:15},today:t,seq:seq,patients:patients,log:[{ts:t+' '+nowTime(),text:'Demo data loaded: 73 active patients, 46 closed cases'}]};
+}
+
+/* ---------- domain logic ---------- */
+function tempOn(p,d){return p.temps.find(function(t){return t.date===d;});}
+function visitOn(p,d){return p.visits.find(function(v){return v.date===d;});}
+function lastTemp(p){return p.temps[p.temps.length-1];}
+function isFever(v){return v>=S.settings.fever;}
+function streak(p,ref){
+  var t=ref||today(),d=tempOn(p,t)?t:addDays(t,-1),n=0;
+  while(d>=p.admitted){var r=tempOn(p,d);if(!r||isFever(r.value))break;n++;d=addDays(d,-1);}
+  return n;
+}
+function streakOf(p){return p.status==='active'?streak(p):streak(p,p.outDate);}
+function phase(p){
+  if(p.status!=='active')return p.status;
+  var s=streak(p);if(s>=3)return 'eligible';
+  var l=lastTemp(p);if(l&&isFever(l.value))return 'fever';
+  if(s>0)return 'recovering';return 'new';
+}
+function activeP(){return S.patients.filter(function(p){return p.status==='active';});}
+function myActive(){return activeP().filter(function(p){return p.nurse===session.id;});}
+function visibleP(){return session.role==='nurse'?S.patients.filter(function(p){return p.nurse===session.id;}):S.patients;}
+function freeRooms(){var used={};activeP().forEach(function(p){used[p.room]=1;});var a=[];for(var i=1;i<=CAP;i++)if(!used[i])a.push(i);return a;}
+function stats(){
+  var P=S.patients,act=0,rec=0,dead=0;
+  P.forEach(function(p){if(p.status==='active')act++;else if(p.status==='discharged')rec++;else dead++;});
+  var adm=P.length,closed=rec+dead;
+  return {adm:adm,act:act,rec:rec,dead:dead,closed:closed,mort:adm?dead/adm*100:0,success:closed?rec/closed*100:null};
+}
+function logIt(text){S.log.unshift({ts:today()+' '+nowTime(),text:text});S.log=S.log.slice(0,40);}
+var can={register:function(r){return r==='admin';},temp:function(r){return r==='nurse';},visit:function(r){return r==='doctor';},
+  discharge:function(r){return r==='admin';},death:function(r){return r==='doctor';},settings:function(r){return r==='admin';},
+  edit:function(r){return r==='admin';},reports:function(r){return r!=='nurse';}};
+
+/* mutations: each returns {ok,error,code} */
+function actRegister(d){
+  if(!can.register(session.role))return {error:'Only Admin can register patients.'};
+  if(activeP().length>=CAP)return {error:'The facility is full (74 of 74 rooms). Discharge a patient before admitting a new one.'};
+  var name=(d.name||'').trim();if(name.length<2)return {error:'Enter the patient\'s full name.'};
+  var age=parseInt(d.age,10);if(!(age>=0&&age<=120))return {error:'Enter an age between 0 and 120.'};
+  var room=parseInt(d.room,10);if(freeRooms().indexOf(room)<0)return {error:'That room is not available. Choose a free room.'};
+  var p={id:'CT-'+String(++S.seq).padStart(4,'0'),name:name,age:age,sex:d.sex||'F',contact:(d.contact||'').trim(),room:room,nurse:nurseForRoom(room),
+    admitted:today(),status:'active',outDate:null,outBy:null,temps:[],visits:[]};
+  S.patients.push(p);logIt(session.name+' registered '+p.id+' ('+p.name+') in room '+room);save();return {ok:true,patient:p};
+}
+function actTemp(id,raw){
+  if(!can.temp(session.role))return {error:'Only nurses can record temperatures.'};
+  var p=S.patients.find(function(x){return x.id===id;});if(!p||p.status!=='active')return {error:'Patient is not an active patient.'};
+  if(p.nurse!==session.id)return {error:'This patient is assigned to '+nameOf(p.nurse)+'.'};
+  var v=parseFloat(String(raw).replace(',','.'));
+  if(!(v>=34&&v<=43))return {error:'Enter a temperature between 34.0 and 43.0 °C.'};
+  v=Math.round(v*10)/10;var ex=tempOn(p,today());
+  if(ex)return {code:'duplicate',error:'Already recorded today at '+ex.time+' ('+f1(ex.value)+' °C). Use a correction with a reason.'};
+  p.temps.push({date:today(),time:nowTime(),value:v,by:session.id,corrections:[]});
+  logIt(session.name+' recorded '+f1(v)+' °C for '+p.id+(isFever(v)?' (fever)':''));save();return {ok:true,fever:isFever(v),value:v};
+}
+function actCorrect(id,raw,reason){
+  if(!can.temp(session.role))return {error:'Only nurses can correct temperatures.'};
+  var p=S.patients.find(function(x){return x.id===id;});var ex=p&&tempOn(p,today());if(!ex)return {error:'No reading to correct today.'};
+  if(p.nurse!==session.id)return {error:'This patient is assigned to '+nameOf(p.nurse)+'.'};
+  var v=parseFloat(String(raw).replace(',','.'));if(!(v>=34&&v<=43))return {error:'Enter a temperature between 34.0 and 43.0 °C.'};
+  if((reason||'').trim().length<5)return {error:'Give a reason for the correction (at least 5 characters).'};
+  v=Math.round(v*10)/10;ex.corrections.push({from:ex.value,reason:reason.trim(),time:nowTime(),by:session.id});ex.value=v;
+  logIt(session.name+' corrected today\'s reading for '+p.id+' to '+f1(v)+' °C');save();return {ok:true,value:v};
+}
+function actVisit(id,notes,exception){
+  if(!can.visit(session.role))return {error:'Only doctors can record visits.'};
+  var p=S.patients.find(function(x){return x.id===id;});if(!p||p.status!=='active')return {error:'Patient is not an active patient.'};
+  if(visitOn(p,today()))return {error:'A doctor visit is already recorded today.'};
+  var ex=(exception||'').trim();
+  if(!tempOn(p,today())&&ex.length<5)return {code:'needs-temp',error:'Temperature is not recorded yet. Wait for the nurse, or record an exception with a reason.'};
+  p.visits.push({date:today(),time:nowTime(),by:session.id,notes:(notes||'').trim(),exception:tempOn(p,today())?'':ex});
+  logIt(session.name+' visited '+p.id+(tempOn(p,today())?'':' (exception: temperature pending)'));save();return {ok:true};
+}
+function actDeath(id){
+  if(!can.death(session.role))return {error:'Only doctors can record a death.'};
+  var p=S.patients.find(function(x){return x.id===id;});if(!p||p.status!=='active')return {error:'Patient is not an active patient.'};
+  p.status='deceased';p.outDate=today();p.outBy=session.id;logIt(session.name+' recorded the death of '+p.id+'; room '+p.room+' is free');save();return {ok:true};
+}
+function actDischarge(id){
+  if(!can.discharge(session.role))return {error:'Only Admin can discharge patients.'};
+  var p=S.patients.find(function(x){return x.id===id;});if(!p||p.status!=='active')return {error:'Patient is not an active patient.'};
+  if(streak(p)<3)return {error:'Patient has not completed 3 full days without fever.'};
+  p.status='discharged';p.outDate=today();p.outBy=session.id;logIt(session.name+' discharged '+p.id+'; room '+p.room+' is free');save();return {ok:true};
+}
+function actEdit(id,d){
+  if(!can.edit(session.role))return {error:'Only Admin can edit patient details.'};
+  var p=S.patients.find(function(x){return x.id===id;});var name=(d.name||'').trim(),age=parseInt(d.age,10);
+  if(name.length<2)return {error:'Enter a name.'};if(!(age>=0&&age<=120))return {error:'Enter an age between 0 and 120.'};
+  p.name=name;p.age=age;p.contact=(d.contact||'').trim();logIt(session.name+' updated details of '+p.id);save();return {ok:true};
+}
+function actSettings(d){
+  if(!can.settings(session.role))return {error:'Only Admin can change settings.'};
+  var fv=parseFloat(d.fever),ma=parseFloat(d.mort);
+  if(!(fv>=36.5&&fv<=40))return {error:'Fever threshold must be between 36.5 and 40.0 °C.'};
+  if(!(ma>=1&&ma<=100))return {error:'Mortality alert level must be between 1 and 100 percent.'};
+  S.settings.fever=Math.round(fv*10)/10;S.settings.mortAlert=ma;logIt(session.name+' set fever threshold to '+f1(fv)+' °C and mortality alert to '+ma+'%');save();return {ok:true};
+}
+
+/* ---------- small renderers ---------- */
+var B=function(c,t){return '<span class="badge '+c+'">'+t+'</span>';};
+function statusBadge(p){switch(phase(p)){
+  case 'eligible':return B('b-teal','Discharge eligible');case 'fever':return B('b-red','Fever');
+  case 'recovering':return B('b-amber','Recovering');case 'new':return B('b-grey','Awaiting readings');
+  case 'discharged':return B('b-green','Discharged');default:return B('b-dark','Deceased');}}
+function tempBadge(p){return tempOn(p,today())?B('b-green','Completed'):B('b-amber','Pending');}
+function visitBadge(p){if(visitOn(p,today()))return B('b-green','Visited');return tempOn(p,today())?B('b-blue','Ready for visit'):B('b-grey','Awaiting temperature');}
+function tv(v){return '<span class="mono '+(isFever(v)?'t-fever':'')+'">'+f1(v)+' °C</span>';}
+function pips(p){var s=Math.min(streakOf(p),3);return '<span class="pips" title="'+s+' of 3 days without fever">'+[0,1,2].map(function(i){return '<i class="'+(i<s?'on':'')+'"></i>';}).join('')+'</span><span class="mono sub">'+s+'/3</span>';}
+function kpi(l,v,s,tone){return '<div class="kpi '+(tone||'')+'"><div class="kpi-l">'+l+'</div><div class="kpi-v">'+v+'</div><div class="kpi-s">'+(s||'')+'</div></div>';}
+function banner(kind,title,text){return '<div class="banner '+kind+'" role="alert">'+ic('warn')+'<div><strong>'+title+'</strong><span>'+text+'</span></div></div>';}
+function chips(scope,key,cur,items){return '<div class="tabs" role="group">'+items.map(function(i){return '<button class="tab" aria-pressed="'+(cur===i[0])+'" data-act="chip" data-scope="'+scope+'" data-key="'+key+'" data-val="'+i[0]+'">'+i[1]+(i[2]!=null?'<b>'+i[2]+'</b>':'')+'</button>';}).join('')+'</div>';}
+function empty(t){return '<div class="empty">'+t+'</div>';}
+function tw(h,rows){return '<div class="tw"><table><thead><tr>'+h.map(function(x){return '<th>'+x+'</th>';}).join('')+'</tr></thead><tbody>'+rows+'</tbody></table></div>';}
+function matchQ(p,q){if(!q)return true;return (p.name+' '+p.id+' room '+p.room).toLowerCase().indexOf(q.toLowerCase())>=0;}
+
+/* ---------- charts ---------- */
+function trendChart(p){
+  var pts=p.temps.slice(-14);if(pts.length<2)return '<p class="muted">At least two readings are needed to draw a trend.</p>';
+  var W=560,H=190,L=34,Rr=28,T=14,Bm=26,th=S.settings.fever,vals=pts.map(function(x){return x.value;}).concat([th]);
+  var lo=Math.floor(Math.min.apply(null,vals)-.5),hi=Math.ceil(Math.max.apply(null,vals)+.5);
+  var x=function(i){return L+(W-L-Rr)*i/(pts.length-1);},y=function(v){return T+(H-T-Bm)*(1-(v-lo)/(hi-lo));};
+  var g='',k;for(k=lo;k<=hi;k++)g+='<line class="g-grid" x1="'+L+'" x2="'+(W-Rr)+'" y1="'+y(k)+'" y2="'+y(k)+'"/><text class="g-txt" x="'+(L-6)+'" y="'+(y(k)+3)+'" text-anchor="end">'+k+'</text>';
+  var step=Math.ceil(pts.length/7),xl='';pts.forEach(function(q,i){if(i%step===0||i===pts.length-1)xl+='<text class="g-txt" x="'+x(i)+'" y="'+(H-8)+'" text-anchor="middle">'+fmtDate(q.date)+'</text>';});
+  var line=pts.map(function(q,i){return (i?'L':'M')+x(i).toFixed(1)+' '+y(q.value).toFixed(1);}).join(' ');
+  var dots=pts.map(function(q,i){return '<circle cx="'+x(i).toFixed(1)+'" cy="'+y(q.value).toFixed(1)+'" r="4" fill="'+(isFever(q.value)?'var(--red)':'var(--teal)')+'"><title>'+fmtDate(q.date)+': '+f1(q.value)+' °C</title></circle>';}).join('');
+  return '<div class="svgw"><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Temperature trend with fever threshold">'+g+xl+
+    '<line class="g-th" x1="'+L+'" x2="'+(W-Rr)+'" y1="'+y(th)+'" y2="'+y(th)+'"/><text class="g-lab" x="'+(W-Rr)+'" y="'+(y(th)-4)+'" text-anchor="end">Fever from '+f1(th)+' °C</text>'+
+    '<path class="g-line" d="'+line+'"/>'+dots+'</svg></div>';
+}
+function barChart7(){
+  var t=today(),days=[0,1,2,3,4,5,6].map(function(i){return addDays(t,i-6);});
+  var data=days.map(function(d){var f=0,n=0;S.patients.forEach(function(p){var r=tempOn(p,d);if(r){if(isFever(r.value))f++;else n++;}});return {d:d,f:f,n:n};});
+  var max=Math.max.apply(null,data.map(function(q){return q.f+q.n;}).concat([10])),top=Math.ceil(max/20)*20;
+  var W=560,H=220,L=34,Rr=8,T=16,Bm=28,bw=(W-L-Rr)/7,ph=H-T-Bm,s='',k;
+  [0,top/2,top].forEach(function(v){var yy=T+ph*(1-v/top);s+='<line class="g-grid" x1="'+L+'" x2="'+(W-Rr)+'" y1="'+yy+'" y2="'+yy+'"/><text class="g-txt" x="'+(L-6)+'" y="'+(yy+3)+'" text-anchor="end">'+v+'</text>';});
+  data.forEach(function(q,i){var x0=L+i*bw+bw*.2,w=bw*.6,hn=q.n/top*ph,hf=q.f/top*ph,yb=T+ph;
+    s+='<rect x="'+x0+'" y="'+(yb-hn)+'" width="'+w+'" height="'+hn+'" fill="var(--teal)"><title>'+fmtDate(q.d)+': '+q.n+' normal readings</title></rect>';
+    s+='<rect x="'+x0+'" y="'+(yb-hn-hf)+'" width="'+w+'" height="'+hf+'" fill="var(--red)"><title>'+fmtDate(q.d)+': '+q.f+' fever readings</title></rect>';
+    s+='<text class="g-txt" x="'+(x0+w/2)+'" y="'+(yb-hn-hf-4)+'" text-anchor="middle">'+(q.n+q.f)+'</text><text class="g-txt" x="'+(x0+w/2)+'" y="'+(H-10)+'" text-anchor="middle">'+fmtDate(q.d)+'</text>';});
+  return '<div class="svgw"><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Temperature readings per day, split into fever and normal">'+s+'</svg></div><div class="legend"><span><i style="background:var(--teal)"></i>Normal reading</span><span><i style="background:var(--red)"></i>Fever reading</span></div>';
+}
+
+/* ---------- views ---------- */
+function vLogin(){
+  var grp=function(role,title){return '<div class="grp"><h3>'+title+'</h3>'+USERS.filter(function(u){return u.role===role;}).map(function(u){
+    return '<button class="who" data-act="login" data-id="'+u.id+'"><span class="who-av">'+initials(u.name)+'</span><span class="who-t"><strong>'+esc(u.name)+'</strong><small>'+u.id+' · '+(u.ward||u.blurb)+'</small></span><span class="who-go">Sign in</span></button>';}).join('')+'</div>';};
+  return '<div class="login"><div class="login-l"><div class="brand"><div class="brand-mark">'+logo()+'</div><div><strong>CareTrack</strong><small>Patient monitoring and management</small></div></div>'+
+    '<h1>One shared record for every temperature, visit and discharge.</h1><ul><li><strong>74</strong>rooms, with admissions blocked when full</li><li><strong>1 + 1</strong>temperature reading and doctor visit per patient per day</li><li><strong>3 days</strong>without fever makes a patient discharge eligible</li><li><strong>15%</strong>expected mortality, tracked against an 85% success benchmark</li></ul></div>'+
+    '<div class="login-r"><div><h2>Sign in</h2><p class="muted">Demo environment. Pick a staff member to continue, no password needed.</p></div>'+grp('nurse','Nurses')+grp('doctor','Doctors')+grp('admin','Admin')+'</div></div>';
+}
+function logo(){return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';}
+
+function shell(content,title,sub){
+  var nav=NAV.filter(function(n){return n.roles.indexOf(session.role)>=0;}).map(function(n){return '<a href="#'+n.id+'" '+(n.id===view?'aria-current="page"':'')+'>'+ic(n.icon)+n.label+'</a>';}).join('');
+  var offset=S.today!==realToday();
+  return '<div class="shell"><aside class="side"><div class="brand"><div class="brand-mark">'+logo()+'</div><div><strong>CareTrack</strong><small>Quarantine and treatment</small></div></div><nav class="nav" aria-label="Main">'+nav+'</nav>'+
+    '<div class="userbox"><div><strong>'+esc(session.name)+'</strong><small>'+ROLE_LABEL[session.role]+' · '+session.id+'</small></div><button class="btn btn-ghost btn-sm" data-act="logout">Switch user</button></div></aside>'+
+    '<main class="main"><div class="top"><div><h1>'+title+'</h1><p>'+sub+'</p></div><div class="chips"><span class="chip">Facility date: <b class="mono">'+fmtLong(today())+'</b></span>'+(offset?'<span class="chip">Demo day advanced</span>':'')+'</div></div>'+content+'</main></div>';
+}
+
+function vDashboard(){
+  var r=session.role,st=stats(),act=activeP(),t=today(),b='',k='',q='';
+  if(act.length>=CAP)b+=banner('amber','Facility is full: 74 of 74 rooms occupied','New admissions are blocked until a discharge frees a room.');
+  if(can.reports(r)&&st.mort>S.settings.mortAlert)b+=banner('red','Mortality rate '+f1(st.mort)+'% is above the '+S.settings.mortAlert+'% alert level','Review treatment outcomes. Mortality is deaths divided by all patients admitted.');
+  var pendT=act.filter(function(p){return !tempOn(p,t);}),elig=act.filter(function(p){return streak(p)>=3;}),fev=act.filter(function(p){return phase(p)==='fever';});
+  if(r==='admin'){
+    k=kpi('Occupancy',act.length+' / '+CAP,(CAP-act.length)+(CAP-act.length===1?' room free':' rooms free'),act.length>=CAP?'amber':'')+kpi('Discharge eligible',elig.length,'3 full days without fever','teal')+
+      kpi('Temperatures pending',pendT.length,'of '+act.length+' active patients',pendT.length?'amber':'')+kpi('Mortality rate',f1(st.mort)+'%',st.dead+' deaths of '+st.adm+' admitted',st.mort>S.settings.mortAlert?'red':'')+
+      kpi('Success rate',st.success==null?'n/a':f1(st.success)+'%','closed cases, benchmark 85%',st.success!=null&&st.success<85?'amber':'');
+    q=card('Ready to discharge','<a class="btn btn-ghost btn-sm" href="#discharge">Open discharge list</a>',qtable(elig,'No patients are discharge eligible right now.'));
+  }else if(r==='nurse'){
+    var mine=myActive(),mp=mine.filter(function(p){return !tempOn(p,t);});
+    k=kpi('My patients',mine.length,esc(nameOf(session.id))+', '+(session.id==='N-101'?'Ward A':'Ward B'))+kpi('Temperature pending',mp.length,'to record today',mp.length?'amber':'teal')+
+      kpi('Completed today',mine.length-mp.length,'readings recorded')+kpi('Fever now',mine.filter(function(p){return phase(p)==='fever';}).length,'latest reading above threshold','red');
+    q=card('Waiting for a temperature','<a class="btn btn-primary btn-sm" href="#temperature">Start temperature round</a>',qtable(mp.sort(function(a,c){return a.room-c.room;}),'Every assigned patient has a reading today.'));
+  }else{
+    var ready=act.filter(function(p){return tempOn(p,t)&&!visitOn(p,t);}),wait=act.filter(function(p){return !tempOn(p,t)&&!visitOn(p,t);}),done=act.filter(function(p){return visitOn(p,t);});
+    k=kpi('Ready for visit',ready.length,'temperature recorded','teal')+kpi('Awaiting temperature',wait.length,'nurse has not recorded yet',wait.length?'amber':'')+
+      kpi('Visited today',done.length,'of '+act.length+' active patients')+kpi('Discharge eligible',elig.length,'visible to Admin automatically')+kpi('Fever now',fev.length,'latest reading above threshold','red');
+    ready.sort(function(a,c){return (phase(c)==='fever')-(phase(a)==='fever')||a.room-c.room;});
+    q=card('Ready for a visit','<a class="btn btn-primary btn-sm" href="#visits">Open visit list</a>',qtable(ready,'No patients are waiting for a visit.'));
+  }
+  var lg=S.log.slice(0,8).map(function(l){return '<tr><td class="mono sub" style="white-space:nowrap">'+esc(l.ts)+'</td><td>'+esc(l.text)+'</td></tr>';}).join('');
+  return b+'<div class="grid g-kpi">'+k+'</div>'+q+card('Recent activity','',tw(['When','What'],lg||'<tr><td colspan="2">Nothing yet.</td></tr>'));
+}
+function card(title,right,body){return '<section class="card"><div class="card-h"><h2>'+title+'</h2>'+right+'</div>'+body+'</section>';}
+function qtable(list,emptyText){
+  if(!list.length)return empty(emptyText);
+  var rows=list.slice(0,10).map(function(p){return '<tr><td class="mono">'+p.room+'</td><td><button class="link" data-act="open" data-id="'+p.id+'">'+esc(p.name)+'</button><div class="sub mono">'+p.id+'</div></td><td>'+statusBadge(p)+'</td><td>'+pips(p)+'</td></tr>';}).join('');
+  return tw(['Room','Patient','Status','No fever'],rows)+(list.length>10?'<p class="sub" style="margin-top:8px">Showing 10 of '+list.length+'.</p>':'');
+}
+
+function patientList(){
+  var f=F.patients.f,q=F.patients.q,l=visibleP().filter(function(p){
+    var ph=phase(p);switch(f){case 'active':return p.status==='active';case 'fever':return ph==='fever';case 'recovering':return ph==='recovering';
+      case 'eligible':return ph==='eligible';case 'pending':return p.status==='active'&&!tempOn(p,today());case 'discharged':return p.status==='discharged';case 'deceased':return p.status==='deceased';default:return true;}}).filter(function(p){return matchQ(p,q);});
+  l.sort(function(a,c){return p_active(a)&&p_active(c)?a.room-c.room:(c.outDate||'9').localeCompare(a.outDate||'9');});
+  if(!l.length)return empty('No patients match this filter.');
+  var rows=l.slice(0,120).map(function(p){var lt=lastTemp(p);return '<tr class="click" data-act="open" data-id="'+p.id+'"><td class="mono">'+p.room+'</td><td><button class="link" data-act="open" data-id="'+p.id+'">'+esc(p.name)+'</button><div class="sub mono">'+p.id+'</div></td><td>'+p.age+'</td><td>'+esc(nameOf(p.nurse))+'</td><td>'+(p.status==='active'?tempBadge(p):'<span class="muted">-</span>')+'</td><td>'+(lt?tv(lt.value):'-')+'</td><td>'+(p.status==='active'?pips(p):'')+'</td><td>'+statusBadge(p)+'</td></tr>';}).join('');
+  return tw(['Room','Patient','Age','Nurse','Today','Last reading','No fever','Status'],rows)+(l.length>120?'<p class="sub" style="margin-top:8px">Showing 120 of '+l.length+'. Narrow the search.</p>':'');
+}
+function p_active(p){return p.status==='active';}
+function vPatients(){
+  var V=visibleP(),c=function(fn){return V.filter(fn).length;};
+  return (session.role==='nurse'?'<p class="muted">You can see patients assigned to you only.</p>':'')+
+   '<div class="card"><div class="tools"><input class="inp search" id="q-patients" type="search" placeholder="Search name, ID or room" value="'+esc(F.patients.q)+'" aria-label="Search patients">'+
+   chips('patients','f',F.patients.f,[['active','Active',c(p_active)],['fever','Fever',c(function(p){return phase(p)==='fever';})],['recovering','Recovering',c(function(p){return phase(p)==='recovering';})],['eligible','Discharge eligible',c(function(p){return phase(p)==='eligible';})],['pending','Temp pending',c(function(p){return p.status==='active'&&!tempOn(p,today());})],['discharged','Discharged',c(function(p){return p.status==='discharged';})],['deceased','Deceased',c(function(p){return p.status==='deceased';})],['all','All',V.length]])+
+   '</div><div id="results">'+patientList()+'</div></div>';
+}
+
+function vRegister(){
+  var full=activeP().length>=CAP,fr=freeRooms(),done='';
+  if(lastReg){var p=S.patients.find(function(x){return x.id===lastReg;});if(p)done='<div class="banner green" role="status"><div><strong>Registered '+esc(p.name)+'</strong><span>Patient ID <b class="mono">'+p.id+'</b>, room <b class="mono">'+p.room+'</b> ('+wardOf(p.room)+'), nurse '+esc(nameOf(p.nurse))+'. Rooms occupied: '+activeP().length+' of '+CAP+'.</span></div></div>';}
+  var opts=fr.map(function(n){return '<option value="'+n+'">Room '+n+' ('+wardOf(n)+')</option>';}).join('');
+  return (full?banner('amber','Facility is full','No rooms are free. Registration is blocked until a patient is discharged or a death is recorded.'):'')+done+
+   '<section class="card"><div class="card-h"><h2>New patient</h2><span class="chip">'+fr.length+' free room'+(fr.length===1?'':'s')+'</span></div>'+
+   '<form data-form="register" novalidate><fieldset style="border:0;padding:0;margin:0" '+(full?'disabled':'')+'><div class="frm">'+
+   '<div class="field"><label for="r-name">Full name</label><input class="inp" id="r-name" autocomplete="off"></div>'+
+   '<div class="field"><label for="r-age">Age</label><input class="inp" id="r-age" inputmode="numeric" autocomplete="off"></div>'+
+   '<div class="field"><label for="r-sex">Sex</label><select class="inp" id="r-sex"><option value="F">Female</option><option value="M">Male</option></select></div>'+
+   '<div class="field"><label for="r-contact">Emergency contact (optional)</label><input class="inp" id="r-contact" autocomplete="off"></div>'+
+   '<div class="field"><label for="r-room">Room</label><select class="inp" id="r-room">'+(opts||'<option value="">No free rooms</option>')+'</select><small id="r-nurse">'+(fr.length?'Assigned nurse: '+esc(nameOf(nurseForRoom(fr[0])))+' ('+wardOf(fr[0])+')':'')+'</small></div>'+
+   '<div class="field"><label>Patient ID</label><div class="inp mono" style="background:var(--tint)">CT-'+String(S.seq+1).padStart(4,'0')+' (assigned on save)</div></div></div>'+
+   '<p class="err" id="r-err" role="alert"></p><div class="rowl"><button class="btn btn-primary" type="submit">Register patient</button></div></fieldset></form></section>';
+}
+
+function tempList(){
+  var t=today(),f=F.temp.f,q=F.temp.q,l=myActive().filter(function(p){return f==='all'||(f==='pending'?!tempOn(p,t):!!tempOn(p,t));}).filter(function(p){return matchQ(p,q);}).sort(function(a,c){return a.room-c.room;});
+  if(!l.length)return empty(f==='pending'?'No pending temperatures. The round is complete.':'No patients match.');
+  var rows=l.map(function(p){
+    var r=tempOn(p,t),prev=p.temps.filter(function(x){return x.date<t;}).slice(-1)[0],cell;
+    if(!r)cell='<div class="entry"><input class="inp inp-sm mono" id="t-'+p.id+'" inputmode="decimal" placeholder="e.g. 37.2" aria-label="Temperature in °C for '+esc(p.name)+'"><span class="muted">°C</span><button class="btn btn-primary btn-sm" data-act="save-temp" data-id="'+p.id+'">Save</button></div><div class="im" id="m-'+p.id+'" role="alert"></div>';
+    else{cell='<div class="entry">'+tv(r.value)+'<span class="sub">at '+r.time+(r.corrections.length?', corrected':'')+'</span><button class="btn btn-ghost btn-sm" data-act="corr-toggle" data-id="'+p.id+'">Enter again</button></div>';
+      if(F.temp.corr===p.id)cell+='<div class="corr"><div><b>Already recorded today.</b> One reading per patient per day. Saved '+f1(r.value)+' °C at '+r.time+' by '+r.by+'. Enter a correction only if that value was wrong.</div><div class="entry"><input class="inp inp-sm mono" id="c-v-'+p.id+'" inputmode="decimal" placeholder="New °C" aria-label="Corrected temperature"><input class="inp" style="flex:1;min-width:150px" id="c-r-'+p.id+'" placeholder="Reason for correction" aria-label="Reason"></div><div class="entry"><button class="btn btn-primary btn-sm" data-act="save-corr" data-id="'+p.id+'">Save correction</button><button class="btn btn-ghost btn-sm" data-act="corr-toggle" data-id="'+p.id+'">Cancel</button></div><div class="im" id="m-'+p.id+'" role="alert"></div></div>';}
+    return '<tr><td class="mono">'+p.room+'</td><td><button class="link" data-act="open" data-id="'+p.id+'">'+esc(p.name)+'</button><div class="sub mono">'+p.id+'</div></td><td>'+(prev?tv(prev.value)+'<div class="sub">'+fmtDate(prev.date)+'</div>':'<span class="muted">First day</span>')+'</td><td>'+tempBadge(p)+'</td><td>'+cell+'</td></tr>';}).join('');
+  return tw(['Room','Patient','Previous','Today','Record temperature'],rows);
+}
+function vTemperature(){
+  var t=today(),m=myActive(),pn=m.filter(function(p){return !tempOn(p,t);}).length;
+  return (pn?banner('amber',pn+' temperature'+(pn===1?'':'s')+' still pending','Doctors see these patients as "Awaiting temperature" until you record them.'):banner('green','Round complete','Every assigned patient has a reading today.'))+
+   '<div class="card"><div class="tools"><input class="inp search" id="q-temp" type="search" placeholder="Search name, ID or room" value="'+esc(F.temp.q)+'" aria-label="Search">'+
+   chips('temp','f',F.temp.f,[['pending','Pending',pn],['done','Completed',m.length-pn],['all','All',m.length]])+'</div><div id="results">'+tempList()+'</div></div>';
+}
+
+function visitList(){
+  var t=today(),f=F.visits.f,q=F.visits.q,l=activeP().filter(function(p){var tt=!!tempOn(p,t),vv=!!visitOn(p,t);
+    return f==='all'||(f==='ready'&&tt&&!vv)||(f==='wait'&&!tt&&!vv)||(f==='done'&&vv);}).filter(function(p){return matchQ(p,q);});
+  l.sort(function(a,c){return (phase(c)==='fever')-(phase(a)==='fever')||a.room-c.room;});
+  if(!l.length)return empty('No patients in this list.');
+  var rows=l.slice(0,120).map(function(p){var r=tempOn(p,t),v=visitOn(p,t);
+    return '<tr><td class="mono">'+p.room+'</td><td><button class="link" data-act="open" data-id="'+p.id+'">'+esc(p.name)+'</button><div class="sub mono">'+p.id+'</div></td><td>'+(r?tv(r.value)+'<div class="sub">'+r.time+'</div>':'<span class="muted">Not recorded</span>')+'</td><td>'+pips(p)+'</td><td>'+statusBadge(p)+'</td><td>'+visitBadge(p)+'</td><td>'+(v?'<span class="sub">'+v.time+' by '+esc(nameOf(v.by))+'</span>':'<button class="btn '+(r?'btn-primary':'btn-ghost')+' btn-sm" data-act="open-visit" data-id="'+p.id+'">Record visit</button>')+'</td></tr>';}).join('');
+  return tw(['Room','Patient','Today\'s temperature','No fever','Status','Visit','Action'],rows)+(l.length>120?'<p class="sub" style="margin-top:8px">Showing 120 of '+l.length+'.</p>':'');
+}
+function vVisits(){
+  var t=today(),a=activeP(),n=function(fn){return a.filter(fn).length;};
+  return '<div class="card"><div class="tools"><input class="inp search" id="q-visits" type="search" placeholder="Search name, ID or room" value="'+esc(F.visits.q)+'" aria-label="Search">'+
+   chips('visits','f',F.visits.f,[['ready','Ready for visit',n(function(p){return tempOn(p,t)&&!visitOn(p,t);})],['wait','Awaiting temperature',n(function(p){return !tempOn(p,t)&&!visitOn(p,t);})],['done','Visited today',n(function(p){return visitOn(p,t);})],['all','All',a.length]])+
+   '</div><div id="results">'+visitList()+'</div></div>';
+}
+
+function vDischarge(){
+  var a=activeP(),el=a.filter(function(p){return streak(p)>=3;}),rec=a.filter(function(p){var s=streak(p);return s>=1&&s<3;}),done=S.patients.filter(function(p){return p.status==='discharged';}).sort(function(x,y){return y.outDate.localeCompare(x.outDate);}),tab=F.discharge.tab,adm=can.discharge(session.role),body;
+  if(tab==='eligible'){body=el.length?tw(['Room','Patient','No fever','Last reading','Visit today',adm?'Action':''],el.sort(function(x,y){return x.room-y.room;}).map(function(p){return '<tr><td class="mono">'+p.room+'</td><td><button class="link" data-act="open" data-id="'+p.id+'">'+esc(p.name)+'</button><div class="sub mono">'+p.id+'</div></td><td>'+pips(p)+B('b-teal','Eligible')+'</td><td>'+tv(lastTemp(p).value)+'</td><td>'+visitBadge(p)+'</td><td>'+(adm?'<button class="btn btn-primary btn-sm" data-act="open-discharge" data-id="'+p.id+'">Discharge</button>':'')+'</td></tr>';}).join('')):empty('No patients have completed 3 full days without fever yet.');}
+  else if(tab==='recovering'){body=rec.length?tw(['Room','Patient','Progress','Last reading','Days left'],rec.sort(function(x,y){return streak(y)-streak(x)||x.room-y.room;}).map(function(p){return '<tr><td class="mono">'+p.room+'</td><td><button class="link" data-act="open" data-id="'+p.id+'">'+esc(p.name)+'</button><div class="sub mono">'+p.id+'</div></td><td>'+pips(p)+'</td><td>'+tv(lastTemp(p).value)+'</td><td class="mono">'+(3-streak(p))+'</td></tr>';}).join('')):empty('Nobody is part way through the 3-day count.');}
+  else{body=done.length?tw(['Patient','Room','Admitted','Discharged','By'],done.slice(0,40).map(function(p){return '<tr><td><button class="link" data-act="open" data-id="'+p.id+'">'+esc(p.name)+'</button><div class="sub mono">'+p.id+'</div></td><td class="mono">'+p.room+'</td><td>'+fmtDate(p.admitted)+'</td><td>'+fmtDate(p.outDate)+'</td><td>'+esc(nameOf(p.outBy))+'</td></tr>';}).join('')):empty('No discharges yet.');}
+  return (adm?'':banner('blue','View only','Only Admin can process a discharge. Eligible patients appear here automatically, so doctors do not need to pass them on.'))+
+   '<div class="card"><div class="tools">'+chips('discharge','tab',tab,[['eligible','Discharge eligible',el.length],['recovering','In recovery',rec.length],['done','Recently discharged',done.length]])+'</div>'+body+'</div>';
+}
+
+function vReports(){
+  var st=stats(),sc=st.success,over=st.mort>S.settings.mortAlert,ward=function(a,b){return activeP().filter(function(p){return p.room>=a&&p.room<=b;}).length;};
+  var wa=ward(1,37),wb=ward(38,74),pc=function(n){return st.adm?n/st.adm*100:0;};
+  return (over?banner('red','Mortality rate '+f1(st.mort)+'% is above the '+S.settings.mortAlert+'% alert level','Deaths divided by all patients admitted.'):'')+
+   '<div class="grid g-kpi">'+kpi('Total admitted',st.adm,'every patient ever registered')+kpi('Mortality rate',f1(st.mort)+'%',st.dead+' deaths ÷ '+st.adm+' admitted',over?'red':'teal')+
+   kpi('Success rate',sc==null?'n/a':f1(sc)+'%',st.rec+' recovered ÷ '+st.closed+' closed cases',sc!=null&&sc<85?'amber':'teal')+kpi('Still in treatment',st.act,'excluded from success rate')+'</div>'+
+   '<div class="grid g-2">'+card('Success rate against the 85% benchmark','',
+     '<div class="meter" role="img" aria-label="Success rate '+(sc==null?'not available':f1(sc)+' percent')+', benchmark 85 percent"><i style="width:'+(sc||0)+'%"></i><u style="left:85%"></u><em style="left:85%">85% benchmark</em></div>'+
+     '<p class="'+(sc!=null&&sc<85?'t-fever':'')+'">'+(sc==null?'No closed cases yet.':sc>=85?'On or above benchmark.':'Below benchmark by '+f1(85-sc)+' points.')+'</p><p class="sub">Closed cases are patients who were discharged recovered or died. Patients still in treatment are not counted either way.</p>')+
+     card('Where every admitted patient stands','','<div class="stack" role="img" aria-label="Active '+st.act+', discharged '+st.rec+', deceased '+st.dead+'"><i style="width:'+pc(st.act)+'%;background:var(--blue)"></i><i style="width:'+pc(st.rec)+'%;background:var(--teal)"></i><i style="width:'+pc(st.dead)+'%;background:var(--red)"></i></div>'+
+     '<div class="legend"><span><i style="background:var(--blue)"></i>In treatment '+st.act+' ('+f1(pc(st.act))+'%)</span><span><i style="background:var(--teal)"></i>Discharged '+st.rec+' ('+f1(pc(st.rec))+'%)</span><span><i style="background:var(--red)"></i>Deceased '+st.dead+' ('+f1(pc(st.dead))+'%)</span></div>'+
+     '<h3 style="margin-top:16px">Ward occupancy</h3><div class="sub">Ward A, rooms 1 to 37: <b class="mono">'+wa+'/37</b></div><div class="bar"><i style="width:'+(wa/37*100)+'%"></i></div><div class="sub" style="margin-top:8px">Ward B, rooms 38 to 74: <b class="mono">'+wb+'/37</b></div><div class="bar"><i style="width:'+(wb/37*100)+'%"></i></div>')+'</div>'+
+   card('Temperature readings, last 7 days','',barChart7())+
+   card('How these numbers are defined','','<ul class="defs"><li><b>Total admitted:</b> all patients ever registered, whatever their current status.</li><li><b>Mortality rate:</b> deaths ÷ total admitted × 100. Alert shows above '+S.settings.mortAlert+'%.</li><li><b>Success rate:</b> recovered and discharged ÷ (recovered + deceased) × 100, compared with the 85% benchmark.</li><li><b>Recovered:</b> 3 full consecutive days with a recorded temperature below '+f1(S.settings.fever)+' °C, then discharged by Admin.</li><li><b>Ongoing cases</b> are shown separately and never counted as recoveries or deaths.</li></ul>');
+}
+
+function vConfig(){
+  return '<div class="grid g-2">'+card('Clinical settings','','<form data-form="settings" novalidate><div class="frm"><div class="field"><label for="s-fever">Fever threshold (°C)</label><input class="inp mono" id="s-fever" inputmode="decimal" value="'+f1(S.settings.fever)+'"><small>A reading at or above this value is a fever and resets the recovery count. Applies to all readings immediately.</small></div>'+
+   '<div class="field"><label for="s-mort">Mortality alert level (%)</label><input class="inp mono" id="s-mort" inputmode="decimal" value="'+S.settings.mortAlert+'"><small>Expected rate is 15%. Lower it to preview the warning.</small></div></div><p class="err" id="s-err" role="alert"></p><button class="btn btn-primary" type="submit">Save settings</button></form>')+
+   card('Demo controls','','<p class="muted" style="margin-bottom:12px">Move the facility clock forward to walk a patient through three recovery days, or restore the sample data.</p><div class="rowl"><button class="btn btn-ghost" data-act="adv-day">Advance one day</button><button class="btn btn-ghost" data-act="reset">Reset sample data</button></div><p class="sub" style="margin-top:12px">Facility date: <b class="mono">'+fmtLong(today())+'</b>. Advancing leaves every patient pending until a nurse records new readings, which is how missed days break the 3-day count.</p>')+'</div>';
+}
+function vRestricted(){
+  var n=NAV.find(function(x){return x.id===view;});
+  return '<div class="card"><div class="empty"><h2 style="margin-bottom:6px">Access restricted</h2><p>'+ROLE_LABEL[session.role]+' accounts cannot open '+(n?n.label:'this page')+'.</p><p style="margin-top:12px"><a class="btn btn-ghost" href="#dashboard">Back to dashboard</a></p></div></div>';
+}
+
+var TITLES={dashboard:['Dashboard','Today across the facility.'],patients:['Patients','Search, filter and open a patient record.'],register:['Register patient','Admit a patient and assign a room.'],temperature:['Temperature round','One reading per assigned patient per day.'],visits:['Doctor visits','See today\'s temperature before you visit.'],discharge:['Discharge management','Patients with 3 full days without fever.'],reports:['Reports and analytics','Recovery and mortality against benchmark.'],config:['Settings','Clinical thresholds and demo controls.']};
+
+/* ---------- modals ---------- */
+function dlg(title,sub,body,wide){return '<div class="ov"><div class="dlg" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="dlg-h"><div><h2>'+title+'</h2><p class="sub">'+sub+'</p></div><button class="x" data-act="close" aria-label="Close">'+ic('x')+'</button></div>'+body+'</div></div>';}
+function mPatient(p){
+  var r=session.role,edit=M.edit,t=today();
+  var info=edit?'<div class="frm"><div class="field"><label for="e-name">Name</label><input class="inp" id="e-name" value="'+esc(p.name)+'"></div><div class="field"><label for="e-age">Age</label><input class="inp" id="e-age" value="'+p.age+'"></div><div class="field wide"><label for="e-contact">Emergency contact</label><input class="inp" id="e-contact" value="'+esc(p.contact)+'"></div></div><p class="err" id="e-err" role="alert"></p><div class="rowl"><button class="btn btn-primary btn-sm" data-act="save-edit">Save details</button><button class="btn btn-ghost btn-sm" data-act="edit-toggle">Cancel</button></div>':
+    '<dl class="dl"><div><dt>Room</dt><dd class="mono">'+p.room+' ('+wardOf(p.room)+')</dd></div><div><dt>Age and sex</dt><dd>'+p.age+', '+(p.sex==='F'?'Female':'Male')+'</dd></div><div><dt>Admitted</dt><dd>'+fmtDate(p.admitted)+'</dd></div><div><dt>Assigned nurse</dt><dd>'+esc(nameOf(p.nurse))+'</dd></div><div><dt>Emergency contact</dt><dd>'+(esc(p.contact)||'-')+'</dd></div>'+(p.outDate?'<div><dt>'+(p.status==='deceased'?'Date of death':'Discharged')+'</dt><dd>'+fmtDate(p.outDate)+'</dd></div>':'')+'</dl>';
+  var act='';
+  if(p.status==='active'){
+    if(can.visit(r))act+='<button class="btn btn-primary btn-sm" data-act="open-visit" data-id="'+p.id+'">'+(visitOn(p,t)?'View today\'s visit':'Record visit')+'</button>';
+    if(can.discharge(r))act+='<button class="btn btn-primary btn-sm" data-act="open-discharge" data-id="'+p.id+'" '+(streak(p)<3?'disabled':'')+'>Discharge</button>';
+    if(can.edit(r)&&!edit)act+='<button class="btn btn-ghost btn-sm" data-act="edit-toggle">Edit details</button>';
+    if(r==='nurse')act+='<button class="btn btn-ghost btn-sm" disabled>Discharge</button><span class="sub">Only Admin can discharge patients.</span>';
+    if(r==='doctor')act+='<button class="btn btn-ghost btn-sm" disabled>Register patient</button><span class="sub">Only Admin can register patients.</span>';
+  }else if(can.edit(r)&&!edit)act+='<button class="btn btn-ghost btn-sm" data-act="edit-toggle">Edit details</button>';
+  var th=p.temps.slice().reverse().slice(0,10).map(function(x){return '<tr><td>'+fmtDate(x.date)+'</td><td class="mono">'+x.time+'</td><td>'+tv(x.value)+(x.corrections.length?' <span class="sub">corrected from '+f1(x.corrections[x.corrections.length-1].from)+'</span>':'')+'</td><td class="mono">'+x.by+'</td></tr>';}).join('');
+  var vh=p.visits.slice().reverse().slice(0,6).map(function(x){return '<tr><td>'+fmtDate(x.date)+'</td><td class="mono">'+x.time+'</td><td class="mono">'+x.by+'</td><td>'+esc(x.notes||'')+(x.exception?'<div class="sub">Exception: '+esc(x.exception)+'</div>':'')+'</td></tr>';}).join('');
+  var rec=p.status==='active'?'<div class="rowl">'+pips(p)+statusBadge(p)+'<span class="sub">'+(streak(p)>=3?'Meets the 3-day criterion.':(3-streak(p))+' more fever-free day'+(3-streak(p)===1?'':'s')+' needed.')+'</span></div>':'<div class="rowl">'+statusBadge(p)+'</div>';
+  return dlg(esc(p.name),'<span class="mono">'+p.id+'</span>',rec+info+(act?'<div class="rowl">'+act+'</div>':'')+'<div><h3 style="margin-bottom:8px">Temperature trend</h3>'+trendChart(p)+'</div>'+
+    '<div><h3 style="margin-bottom:8px">Temperature records</h3>'+(th?tw(['Date','Time','Reading','Nurse ID'],th):empty('No readings yet.'))+'</div>'+
+    '<div><h3 style="margin-bottom:8px">Doctor visits</h3>'+(vh?tw(['Date','Time','Doctor ID','Notes'],vh):empty('No visits yet.'))+'</div>');
+}
+function mVisit(p){
+  var t=today(),r=tempOn(p,t),v=visitOn(p,t),el=streak(p)>=3,body;
+  var sum='<dl class="dl"><div><dt>Today\'s temperature</dt><dd>'+(r?tv(r.value)+' <span class="sub">at '+r.time+' by '+r.by+'</span>':'<span class="muted">Not recorded</span>')+'</dd></div><div><dt>Days without fever</dt><dd>'+pips(p)+'</dd></div><div><dt>Room</dt><dd class="mono">'+p.room+'</dd></div></dl>';
+  var warn=!r&&!v?'<div class="banner amber"><div><strong>Temperature not recorded yet</strong><span>Wait for the nurse to record it. If you must visit now, record an exception with a reason.</span></div></div><div class="field"><label><input type="checkbox" id="v-exc"> Record an exception and visit anyway</label></div><div class="field" id="v-exc-wrap" hidden><label for="v-exc-reason">Reason for the exception</label><input class="inp" id="v-exc-reason" placeholder="e.g. Patient in distress, urgent review"></div>':'';
+  if(v)body='<div class="banner green"><div><strong>Visit recorded today</strong><span>'+v.time+' by '+esc(nameOf(v.by))+(v.notes?'. '+esc(v.notes):'')+(v.exception?'. Exception: '+esc(v.exception):'')+'</span></div></div>';
+  else body=warn+'<div class="field"><label for="v-notes">Visit notes and treatment</label><textarea class="inp" id="v-notes" placeholder="Observations, treatment given, plan"></textarea></div><p class="err" id="v-err" role="alert"></p><div class="rowl"><button class="btn btn-primary" data-act="save-visit" data-id="'+p.id+'">Save visit</button></div>';
+  var death=M.death?'<div class="banner red"><div><strong>Record the death of '+esc(p.name)+'?</strong><span>This closes the case, frees room '+p.room+' and counts toward the mortality rate. It cannot be undone here.</span></div></div><div class="rowl"><button class="btn btn-danger btn-sm" data-act="death-confirm" data-id="'+p.id+'">Confirm death record</button><button class="btn btn-ghost btn-sm" data-act="death-cancel">Cancel</button></div>':
+    '<div class="rowl"><button class="btn btn-ghost btn-sm" data-act="death-ask">Record patient death</button></div>';
+  return dlg('Record visit: '+esc(p.name),'<span class="mono">'+p.id+'</span> · Doctor '+esc(session.name),sum+(el?'<div class="banner blue"><div><strong>Meets the 3-day criterion</strong><span>Admin sees this patient on the discharge list automatically.</span></div></div>':'')+'<div><h3 style="margin-bottom:8px">Recent trend</h3>'+trendChart(p)+'</div>'+body+'<hr style="border:0;border-top:1px solid var(--line);width:100%">'+death);
+}
+function mDischarge(p){
+  return dlg('Discharge '+esc(p.name),'<span class="mono">'+p.id+'</span>','<div class="rowl">'+pips(p)+B('b-teal','Discharge eligible')+'</div><p>Discharging closes this case as recovered and frees room <b class="mono">'+p.room+'</b> for a new admission. The full record stays in the system.</p><div class="rowl"><button class="btn btn-primary" data-act="do-discharge" data-id="'+p.id+'">Confirm discharge</button><button class="btn btn-ghost" data-act="close">Cancel</button></div>');
+}
+function renderModal(){
+  var el=document.getElementById('modal');
+  if(!M){el.innerHTML='';return;}
+  var p=S.patients.find(function(x){return x.id===M.id;});if(!p){M=null;el.innerHTML='';return;}
+  el.innerHTML=M.type==='patient'?mPatient(p):M.type==='visit'?mVisit(p):mDischarge(p);
+  var f=el.querySelector('#v-notes,#e-name,button.btn-primary');if(f&&M.type!=='patient')try{f.focus();}catch(e){}
+}
+function openM(o){M=o;renderModal();}
+function closeM(){M=null;renderModal();}
+
+/* ---------- render ---------- */
+function allowed(v){var n=NAV.find(function(x){return x.id===v;});return !!n&&n.roles.indexOf(session.role)>=0;}
+function render(){
+  var root=document.getElementById('root');
+  if(!session){root.innerHTML=vLogin();return;}
+  var meta=TITLES[view]||TITLES.dashboard,c;
+  if(!NAV.find(function(x){return x.id===view;}))view='dashboard';
+  if(!allowed(view))c=vRestricted();
+  else c={dashboard:vDashboard,patients:vPatients,register:vRegister,temperature:vTemperature,visits:vVisits,discharge:vDischarge,reports:vReports,config:vConfig}[view]();
+  root.innerHTML=shell(c,meta[0],meta[1]);
+}
+function results(){var el=document.getElementById('results');if(!el)return;el.innerHTML=view==='patients'?patientList():view==='temperature'?tempList():view==='visits'?visitList():el.innerHTML;}
+var tt;function toast(msg,bad){var el=document.getElementById('toast');el.innerHTML='<div class="toast '+(bad?'bad':'')+'">'+esc(msg)+'</div>';clearTimeout(tt);tt=setTimeout(function(){el.innerHTML='';},3800);}
+function setErr(id,msg){var e=document.getElementById(id);if(e)e.textContent=msg||'';}
+function val(id){var e=document.getElementById(id);return e?e.value:'';}
+
+/* ---------- events ---------- */
+document.addEventListener('click',function(e){
+  if(e.target.classList&&e.target.classList.contains('ov')){closeM();return;}
+  var el=e.target.closest('[data-act]');if(!el)return;var a=el.dataset.act,id=el.dataset.id,r;
+  switch(a){
+    case 'login':session=USERS.find(function(u){return u.id===id;});saveSession();F={patients:{q:'',f:'active'},temp:{q:'',f:'pending',corr:null},visits:{q:'',f:'ready'},discharge:{tab:'eligible'}};lastReg=null;view='dashboard';if(location.hash!=='#dashboard')location.hash='dashboard';render();window.scrollTo(0,0);break;
+    case 'logout':session=null;saveSession();closeM();render();break;
+    case 'chip':F[el.dataset.scope][el.dataset.key]=el.dataset.val;if(el.dataset.scope==='temp')F.temp.corr=null;render();break;
+    case 'open':openM({type:'patient',id:id});break;
+    case 'close':closeM();break;
+    case 'save-temp':r=actTemp(id,val('t-'+id));if(r.ok){toast(r.fever?'Fever recorded ('+f1(r.value)+' °C). Recovery count reset to 0.':'Saved '+f1(r.value)+' °C.');render();}else if(r.code==='duplicate'){F.temp.corr=id;render();toast(r.error,true);}else setErr('m-'+id,r.error);break;
+    case 'corr-toggle':F.temp.corr=F.temp.corr===id?null:id;render();break;
+    case 'save-corr':r=actCorrect(id,val('c-v-'+id),val('c-r-'+id));if(r.ok){F.temp.corr=null;toast('Correction saved ('+f1(r.value)+' °C).');render();}else setErr('m-'+id,r.error);break;
+    case 'open-visit':openM({type:'visit',id:id,death:false});break;
+    case 'save-visit':r=actVisit(id,val('v-notes'),(document.getElementById('v-exc')&&document.getElementById('v-exc').checked)?val('v-exc-reason'):'');
+      if(r.ok){closeM();toast('Visit recorded.');render();}else setErr('v-err',r.error);break;
+    case 'death-ask':M.death=true;renderModal();break;
+    case 'death-cancel':M.death=false;renderModal();break;
+    case 'death-confirm':r=actDeath(id);if(r.ok){closeM();toast('Death recorded. The room is now free.');render();}else toast(r.error,true);break;
+    case 'open-discharge':openM({type:'discharge',id:id});break;
+    case 'do-discharge':r=actDischarge(id);if(r.ok){closeM();toast('Patient discharged. The room is now free.');render();}else toast(r.error,true);break;
+    case 'edit-toggle':M.edit=!M.edit;renderModal();break;
+    case 'save-edit':r=actEdit(M.id,{name:val('e-name'),age:val('e-age'),contact:val('e-contact')});if(r.ok){M.edit=false;renderModal();render();toast('Details updated.');}else setErr('e-err',r.error);break;
+    case 'adv-day':if(can.settings(session.role)){S.today=addDays(S.today,1);logIt('Facility date advanced to '+S.today);save();render();toast('Facility date is now '+fmtDate(S.today)+'.');}break;
+    case 'reset':if(can.settings(session.role)){S=seed();save();render();toast('Sample data restored.');}break;
+  }
+});
+document.addEventListener('submit',function(e){
+  var f=e.target.dataset.form;if(!f)return;e.preventDefault();var r;
+  if(f==='register'){r=actRegister({name:val('r-name'),age:val('r-age'),sex:val('r-sex'),contact:val('r-contact'),room:val('r-room')});
+    if(r.ok){lastReg=r.patient.id;render();toast('Patient '+r.patient.id+' registered.');}else setErr('r-err',r.error);}
+  if(f==='settings'){r=actSettings({fever:val('s-fever'),mort:val('s-mort')});if(r.ok){render();toast('Settings saved.');}else setErr('s-err',r.error);}
+});
+document.addEventListener('input',function(e){
+  var id=e.target.id;
+  if(id==='q-patients'){F.patients.q=e.target.value;results();}
+  else if(id==='q-temp'){F.temp.q=e.target.value;results();}
+  else if(id==='q-visits'){F.visits.q=e.target.value;results();}
+});
+document.addEventListener('change',function(e){
+  var id=e.target.id;
+  if(id==='r-room'){var n=parseInt(e.target.value,10),el=document.getElementById('r-nurse');if(el&&n)el.textContent='Assigned nurse: '+nameOf(nurseForRoom(n))+' ('+wardOf(n)+')';}
+  if(id==='v-exc'){var w=document.getElementById('v-exc-wrap');if(w)w.hidden=!e.target.checked;}
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&M)closeM();
+  if(e.key==='Enter'&&e.target.id&&e.target.id.indexOf('t-')===0&&e.target.tagName==='INPUT'){var b=document.querySelector('[data-act="save-temp"][data-id="'+e.target.id.slice(2)+'"]');if(b)b.click();}
+});
+window.addEventListener('hashchange',function(){var h=location.hash.replace('#','');if(NAV.find(function(n){return n.id===h;})){view=h;lastReg=view==='register'?lastReg:null;F.temp.corr=null;closeM();render();}});
+
+/* ---------- boot ---------- */
+S=load()||seed();
+try{var sid=localStorage.getItem(SKEY);if(sid)session=USERS.find(function(u){return u.id===sid;})||null;}catch(e){}
+var h0=(location.hash||'').replace('#','');if(NAV.find(function(n){return n.id===h0;}))view=h0;
+render();
+window.__caretrack={get S(){return S;},get session(){return session;},seed:seed,streak:streak,stats:stats};
+})();
+</script>
+
+</body></html>
